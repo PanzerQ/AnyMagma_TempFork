@@ -1,0 +1,63 @@
+# Windows MinGW-w64 configuration for clMAGMA
+# 注意：路径中的反斜杠改为正斜杠，空格用短路径或引号（建议避开空格）
+
+# 编译器
+CC        = gcc
+CXX       = g++
+FORT      = gfortran
+
+ARCH      = ar
+ARCHFLAGS = cr
+RANLIB    = ranlib
+
+# 编译选项
+FPIC      = -fPIC
+CFLAGS    = -O3 $(FPIC) -DADD_ -Wall
+CXXFLAGS  = $(CFLAGS) -std=c++11
+FFLAGS    = -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument
+F90FLAGS  = -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument -x f95-cpp-input
+LDFLAGS   = $(FPIC)
+
+# ========== 库路径 ==========
+# 方法1：使用 Windows 短路径（推荐，避免空格）
+# 可用 `cmd /c for %A in ("C:\Program Files (x86)") do echo %~sA` 获取短路径
+# 假设短路径为 C:\PROGRA~2（实际可能不同，请自行确认）
+# 下面的例子使用直接路径加引号，Makefile 中需转义引号
+
+OPENCL_DIR = "C:/Program Files (x86)/OCL_SDK_Light"
+CLBLAST_DIR = C:/Users/HUAWEI/Downloads/CLBlast-1.6.2-windows-x64/CLBlast-1.6.2-windows-x64
+OPENBLAS_DIR = C:/Users/HUAWEI/Downloads/OpenBLAS-0.3.26-x64
+
+INC = -I$(OPENCL_DIR)/include \
+      -I$(CLBLAST_DIR)/include \
+      -I$(OPENBLAS_DIR)/include
+
+LIBDIR = -L$(OPENCL_DIR)/lib/x86_64 \
+         -L$(CLBLAST_DIR)/lib \
+         -L$(OPENBLAS_DIR)/lib
+
+# ========== 库文件 ==========
+# OpenBLAS: 使用 libopenblas.a (MinGW 格式)
+# clBLAST:  尝试链接 clblast.lib (MSVC 格式，MinGW 可能需转换)
+# OpenCL:   链接 opencl.lib 或 -lOpenCL（取决于环境）
+
+LIB = -lopenblas
+
+# clBLAST 处理：MinGW 可能无法直接识别 .lib，建议使用动态链接或转换
+# 如果存在 libclblast.dll.a 或 libclblast.a，则用 -lclblast
+# 否则，直接指定 .lib 文件（需配合 -Wl,--enable-stdcall-fixup）
+# 这里假设使用官方提供的 .lib，尝试强制链接
+LIB += -lclblast
+
+# OpenCL 处理：MinGW 通常需要 libopencl.a（来自 mingw-w64-opencl）
+# 如果未安装，可尝试直接指定 .lib
+LIB += -lOpenCL
+
+# 如果上面 -lOpenCL 失败，改用显式文件链接：
+# LIB += -l:opencl.lib
+
+# 额外 Windows 库
+LIB += -lws2_32 -lwinmm
+
+# 可选：如果遇到对齐内存分配问题，参考之前的讨论添加 -D_ALIGNED_MALLOC
+CFLAGS += -D_ALIGNED_MALLOC

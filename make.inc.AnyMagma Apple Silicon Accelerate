@@ -1,0 +1,73 @@
+#//////////////////////////////////////////////////////////////////////////////
+#   -- MAGMA (version 2.0) -- 
+#      Univ. of Tennessee, Knoxville
+#      Univ. of California, Berkeley
+#      Univ. of Colorado, Denver
+#      @date
+#//////////////////////////////////////////////////////////////////////////////
+
+# --------------------
+# programs
+#
+# Note: Apple's clang must be used to be compatible with Accelerate framework.
+#       Do NOT use GNU gcc/g++ as stack alignment differs for complex.
+CC        = cc
+CXX       = c++
+FORT      = gfortran
+
+ARCH      = ar
+ARCHFLAGS = cr
+RANLIB    = ranlib
+
+# --------------------
+# flags
+
+# For ARM64 M1, do not specify -m32 or -m64; default is arm64.
+# Use -fPIC to make shared (.so) and static (.a) library.
+FPIC      = -fPIC
+
+# Apple's clang does not support OpenMP by default.
+# If you need OpenMP, install llvm (e.g., brew install llvm) and change CC/CXX to
+# /usr/local/opt/llvm/bin/clang, then add -fopenmp.
+CFLAGS    = -O3 $(FPIC) -DADD_ -Wall -Wshadow -DMAGMA_NOAFFINITY -arch arm64
+FFLAGS    = -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument -arch arm64
+F90FLAGS  = -O3 $(FPIC) -DADD_ -Wall -Wno-unused-dummy-argument -x f95-cpp-input -arch arm64
+LDFLAGS   =            $(FPIC) -arch arm64
+
+# Extra checks (safe to disable)
+CFLAGS   += -pedantic -Wno-long-long
+#CFLAGS   += -Werror
+
+# C++11 (required for clBLAST interface if using C++ API)
+CXXFLAGS := $(CFLAGS) -std=c++11
+CFLAGS   += -std=c99
+
+# MacOS likes the library's path to be set (used for shared library)
+INSTALL_NAME = -install_name @rpath/
+
+# --------------------
+# libraries
+
+# CPU BLAS/LAPACK: Apple Accelerate framework
+LIB       = -framework Accelerate -lstdc++ -lm
+
+# OpenCL BLAS: clBLAST  (user modified MAGMA to support clBLAST)
+#               and OpenCL framework
+LIB      += -lclblast -framework OpenCL
+
+# --------------------
+# directories
+
+# clBLAST installation path (adjust to your system)
+# Typical Homebrew (Apple Silicon) path: /opt/homebrew/opt/clblast
+# If installed manually, change accordingly.
+clBLAST    ?= /opt/homebrew/opt/clblast
+
+LIBDIR    = -L$(clBLAST)/lib
+INC       = -I$(clBLAST)/include
+
+# ========================================
+# Replace single & single-complex BLAS functions with reference versions.
+# (i.e., functions that return float; subroutines do not need a fix.)
+# Prepends -lblas_fix to LIB; see Makefile.
+blas_fix = 1
