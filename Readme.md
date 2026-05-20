@@ -159,3 +159,8 @@ Then the kernels will be loaded from source at runtime, ensuring compatibility w
 ## License
 
 Refer to the original clMAGMA license and any additional notes in the source files.
+
+## Contact
+
+Prof. Jinchuan Tang – [jctang@gzu.edu.cn](mailto:jctang@gzu.edu.cn)  
+Issues and pull requests are welcome on the GitHub repository.
